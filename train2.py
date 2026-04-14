@@ -68,6 +68,8 @@ def train(args, model, train_features, dev_features, save_best_val=True, lr=1e-4
 
     best_model = None
     best_val_risk = np.inf
+    best_val_f1 = -10000
+    best_val_output = None
 
     print("Total steps: {}".format(total_steps))
     print("Warmup steps: {}".format(warmup_steps))
@@ -103,10 +105,16 @@ def train(args, model, train_features, dev_features, save_best_val=True, lr=1e-4
             if (step + 1) == len(train_dataloader) - 1 or (args.evaluation_steps > 0 and num_steps % args.evaluation_steps == 0 and step % args.gradient_accumulation_steps == 0):
                 print("training risk:", loss.item(), "   step:", num_steps)
                 if "chemdisgene" in args.data_dir.lower():
-                    avg_val_risk, test_output = cal_val_risk_bio(args, model, dev_features)
+                    avg_val_risk, val_output = cal_val_risk_bio(args, model, dev_features)
                 else:
-                    avg_val_risk, test_output = cal_val_risk(args, model, dev_features)
-                print('avg val risk:', avg_val_risk, test_output, '\n')
+                    avg_val_risk, val_output = cal_val_risk(args, model, dev_features)
+                print('avg val risk:', avg_val_risk, val_output, '\n')
+
+                if (epoch > save_after_epoch) and (best_model is None) or (val_output['dev_F1'] > best_val_f1):
+                    best_val_f1 = val_output['dev_F1']
+                    best_val_output = val_output
+                    # save the best dev f1 model.
+                    torch.save(model.state_dict(), os.path.join(args.save_path, "best_valf1_model.pth"))
 
                 if test_features is not None:
                     if "chemdisgene" in args.data_dir.lower():
@@ -115,15 +123,7 @@ def train(args, model, train_features, dev_features, save_best_val=True, lr=1e-4
                         test_score, test_output = evaluate(args, model, test_features, tag="test")
                     print('test risk:', test_score, test_output, '\n')
 
-                if (epoch > save_after_epoch) and (best_model is None) or (avg_val_risk[0] < best_val_risk):
-                    best_val_risk = avg_val_risk[0]
-                    # copy the model state dict
-                    best_model = {k: v.cpu() for k, v in model.state_dict().items()}
-
-    # load the best model
-    if save_best_val:
-        model.load_state_dict(best_model)
-    # torch.save(model.state_dict(), os.path.join(args.save_path, "state_dict.pth"))
+    print("best val: ", best_val_output)
     return num_steps
 
 def cal_val_risk(args, model, features, tag="dev"):
@@ -461,10 +461,14 @@ def main():
             print("PRETRAINING")
             print("pretrain distant", args.pretrain_distant)
             # temp_epochs = args.num_train_epochs
-            # args.num_train_epochs = 2
+            args.num_train_epochs = 1 # DEBUG
             if args.pretrain_distant == 0: # pretrain on train and quit()
                 train(args, model, train_features, dev_features, lr=1e-4)
-                torch.save(model.state_dict(), os.path.join(args.save_path, "pretrain_state_dict.pth")); quit()
+                # load the best val f1 model for testing
+                model.load_state_dict(torch.load(os.path.join(args.save_path, "best_valf1_model.pth")))
+                test_score, test_output = evaluate(args, model, test_features, tag="test")
+                print("pretrain performance on test", test_output)
+                quit()
             if args.pretrain_distant == 1: # pretrain on distant and quit()
                 if os.path.isfile(f"./distant_features_{args.model_name_or_path}.pkl"):
                     distant_features = pickle.load(open(f"./distant_features_{args.model_name_or_path}.pkl", 'rb'))
