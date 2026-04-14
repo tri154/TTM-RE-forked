@@ -48,7 +48,7 @@ def train(args, model, train_features, dev_features, save_best_val=True, lr=1e-4
         {"params": [p for n, p in model.named_parameters() if any(nd in n for nd in new_layer)], "lr": lr},
     ]
     optimizer = AdamW(optimizer_grouped_parameters, lr=args.learning_rate, eps=args.adam_epsilon)
-            
+
     # model, optimizer = amp.initialize(model, optimizer, opt_level="O1", verbosity=0)
     num_steps = 0
     set_seed(args)
@@ -107,14 +107,14 @@ def train(args, model, train_features, dev_features, save_best_val=True, lr=1e-4
                 else:
                     avg_val_risk, test_output = cal_val_risk(args, model, dev_features)
                 print('avg val risk:', avg_val_risk, test_output, '\n')
-                
+
                 if test_features is not None:
                     if "chemdisgene" in args.data_dir.lower():
                         test_score, test_output = evaluate_bio(args, model, test_features, tag="test")
                     else:
                         test_score, test_output = evaluate(args, model, test_features, tag="test")
                     print('test risk:', test_score, test_output, '\n')
-                    
+
                 if (epoch > save_after_epoch) and (best_model is None) or (avg_val_risk[0] < best_val_risk):
                     best_val_risk = avg_val_risk[0]
                     # copy the model state dict
@@ -143,7 +143,7 @@ def cal_val_risk(args, model, features, tag="dev"):
             output = model(**inputs)
             logits = output[1]
             # print(len(logits))
-            
+
             val_risk.append(np.array([risk.item() for risk in output[0]]))
             nums += 1
 
@@ -177,7 +177,7 @@ def cal_val_risk(args, model, features, tag="dev"):
             tag + "_F1": best_f1 * 100,
             tag + "_F1_ign": best_f1_ign * 100,
         }
-    # return np.stack(val_risk, axis=0).sum(axis=0) / nums,  output            
+    # return np.stack(val_risk, axis=0).sum(axis=0) / nums,  output
     return [-best_f1 * 100],  output
 
 def evaluate(args, model, features, tag="test", eval_top_10=False):
@@ -230,7 +230,7 @@ def evaluate(args, model, features, tag="test", eval_top_10=False):
             print("top10", best_f1, best_f1_ign, re_p, re_r)
             best_f1, _, best_f1_ign, re_f1_ignore_train, re_p, re_r = official_evaluate(ans, args.data_dir, tag='testbottom90', args=args)
             print("testbottom90", best_f1, best_f1_ign, re_p, re_r)
-            
+
         best_f1, _, best_f1_ign, re_f1_ignore_train, re_p, re_r = official_evaluate(ans, args.data_dir, tag, args)
         output = {
             tag + "_F1": best_f1 * 100,
@@ -272,8 +272,8 @@ def cal_val_risk_bio(args, model, features):
             nums += 1
 
     # return val_risk / nums
-    return np.stack(val_risk, axis=0).sum(axis=0) / nums,  output            
-            
+    return np.stack(val_risk, axis=0).sum(axis=0) / nums,  output
+
 
 def evaluate_bio(args, model, features, tag="test"):
 
@@ -460,8 +460,8 @@ def main():
         if args.model_type in ['simple', 'ttmre', 'ATLOP']:
             print("PRETRAINING")
             print("pretrain distant", args.pretrain_distant)
-            temp_epochs = args.num_train_epochs
-            args.num_train_epochs = 2
+            # temp_epochs = args.num_train_epochs
+            # args.num_train_epochs = 2
             if args.pretrain_distant == 0: # pretrain on train and quit()
                 train(args, model, train_features, dev_features, lr=1e-4)
                 torch.save(model.state_dict(), os.path.join(args.save_path, "pretrain_state_dict.pth")); quit()
@@ -488,20 +488,20 @@ def main():
                 test_score, test_output = evaluate(args, model, test_features, tag="test")
                 # quit()
             print("pretrain performance", test_output)
-            
+
             print("FINETUNING")
             args.num_train_epochs = temp_epochs
             model.train_mode = 'finetune'
 
         # if args.pretrain_distant == 3: # finetune on train only, no pretrain
-        if args.pretrain_distant == 2 or args.pretrain_distant == 3: 
+        if args.pretrain_distant == 2 or args.pretrain_distant == 3:
             train(args, model, train_features, dev_features, save_best_val=True, save_after_epoch=0, lr=1e-5,
                 test_features=test_features)
             # train(args, model, train_features, dev_features, save_best_val=False)
             torch.save(model.state_dict(), os.path.join(args.save_path, "finetune_state_dict.pth"))
 
         print("TEST")
-        # if 4, just load finetune_state_dict and eval          
+        # if 4, just load finetune_state_dict and eval
         model.load_state_dict(torch.load(os.path.join(args.save_path, "finetune_state_dict.pth")))
         test_score, test_output = evaluate(args, model, test_features, tag="test", eval_top_10=True)
         print("finetune", test_output)
@@ -515,7 +515,7 @@ def main():
     else:  # Testing
         args.load_path = os.path.join(args.load_path, file_name)
         print(args.load_path)
-        
+
         print("TEST")
         # model = amp.initialize(model, opt_level="O1", verbosity=0)
         model.load_state_dict(torch.load(os.path.join(args.save_path, "state_dict.pth")))
