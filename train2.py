@@ -461,7 +461,7 @@ def main():
             print("PRETRAINING")
             print("pretrain distant", args.pretrain_distant)
             # temp_epochs = args.num_train_epochs
-            args.num_train_epochs = 1 # DEBUG
+            # args.num_train_epochs = 1
             if args.pretrain_distant == 0: # pretrain on train and quit()
                 train(args, model, train_features, dev_features, lr=1e-4)
                 # load the best val f1 model for testing
