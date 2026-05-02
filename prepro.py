@@ -161,7 +161,7 @@ def read_chemdisgene(args, file_in, tokenizer, max_seq_length=1024, lower=True):
                     re_fre[mention["relation"]] += 1
                 relation[mention["relation"] + 1] = 1
                 evidence = mention["evidence"]
-                
+
             relations.append(relation)
             hts.append([entity2id[h], entity2id[t]])
 
@@ -178,7 +178,7 @@ def read_chemdisgene(args, file_in, tokenizer, max_seq_length=1024, lower=True):
                         neg[(entity_type[h], entity_type[t])] = 1
                     else:
                         neg[(entity_type[h], entity_type[t])] += 1
-                    
+
                     relation = [1] + [0] * (len(ctd_rel2id))
                     relations.append(relation)
                     hts.append([entity2id[h], entity2id[t]])
@@ -200,6 +200,23 @@ def read_chemdisgene(args, file_in, tokenizer, max_seq_length=1024, lower=True):
                 'title': sample['docid'],
                 }
         features.append(feature)
+
+
+
+    # TEMP
+    n_remove = 0
+    filter_features = list()
+    for feature in features:
+        if len(feature['hts']) == 0 or len(feature['labels']) == 0:
+            print(feature['title'])
+            n_remove += 1
+            continue
+        filter_features.append(feature)
+    print("# removed docs {}".format(n_remove))
+    features = filter_features
+    # TEMP
+
+
 
     print("# of documents {}.".format(i_line))
     print("# of positive examples {}.".format(pos_samples))
@@ -251,7 +268,7 @@ def read_docred(args, file_in, tokenizer, max_seq_length=1024, max_docs=None):
                     tokens_wordpiece = ["*"] + tokens_wordpiece
                 if (i_s, i_t) in entity_end:
                     tokens_wordpiece = tokens_wordpiece + ["*"]
-                    
+
                 new_map[i_t] = len(sents)
                 sents.extend(tokens_wordpiece)
             new_map[i_t + 1] = len(sents)

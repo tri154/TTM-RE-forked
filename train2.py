@@ -105,7 +105,9 @@ def train(args, model, train_features, dev_features, save_best_val=True, lr=1e-4
             if (step + 1) == len(train_dataloader) - 1 or (args.evaluation_steps > 0 and num_steps % args.evaluation_steps == 0 and step % args.gradient_accumulation_steps == 0):
                 print("training risk:", loss.item(), "   step:", num_steps)
                 if "chemdisgene" in args.data_dir.lower():
-                    avg_val_risk, val_output = cal_val_risk_bio(args, model, dev_features)
+                    # avg_val_risk, val_output = cal_val_risk_bio(args, model, dev_features)
+                    _, val_output = evaluate_bio(args, model, dev_features, tag="dev")
+                    avg_val_risk = 0
                 else:
                     avg_val_risk, val_output = cal_val_risk(args, model, dev_features)
                 print('avg val risk:', avg_val_risk, val_output, '\n')
@@ -461,12 +463,16 @@ def main():
             print("PRETRAINING")
             print("pretrain distant", args.pretrain_distant)
             # temp_epochs = args.num_train_epochs
-            # args.num_train_epochs = 1
+            args.num_train_epochs = 2
             if args.pretrain_distant == 0: # pretrain on train and quit()
+                # debug
+                _, val_output = evaluate_bio(args, model, dev_features, tag="dev")
+                print(val_output)
+                # debug
                 train(args, model, train_features, dev_features, lr=1e-4)
                 # load the best val f1 model for testing
                 model.load_state_dict(torch.load(os.path.join(args.save_path, "best_valf1_model.pth")))
-                test_score, test_output = evaluate(args, model, test_features, tag="test")
+                test_score, test_output = evaluate_bio(args, model, test_features, tag="test")
                 print("pretrain performance on test", test_output)
                 quit()
             if args.pretrain_distant == 1: # pretrain on distant and quit()
