@@ -482,12 +482,12 @@ def main():
                     print("cutting memory size to ", args.memory_size)
                     model.mu_encoder.memory_tokens.data = model.mu_encoder.memory_tokens.data[:args.memory_size]
 
-            if "chemdisgene" in args.data_dir.lower():
-                test_score, test_output = evaluate_bio(args, model, test_features, tag="test")
-            else:
-                test_score, test_output = evaluate(args, model, test_features, tag="test")
+            # if "chemdisgene" in args.data_dir.lower():
+            #     test_score, test_output = evaluate_bio(args, model, test_features, tag="test")
+            # else:
+            #     test_score, test_output = evaluate(args, model, test_features, tag="test")
                 # quit()
-            print("pretrain performance", test_output)
+            # print("pretrain performance", test_output)
 
             print("FINETUNING")
             args.num_train_epochs = temp_epochs
@@ -503,6 +503,13 @@ def main():
         print("TEST")
         # if 4, just load finetune_state_dict and eval
         model.load_state_dict(torch.load(os.path.join(args.save_path, "finetune_state_dict.pth")))
+        torch.save(model.mu_encoder, "mu_encoder.pt")
+        torch.save(model.head_extractor, "head_extractor.pt")
+        torch.save(model.tail_extractor, "tail_extractor.pt")
+        torch.save(model.model, "encoder.pt")
+        torch.save
+        quit()
+
         test_score, test_output = evaluate(args, model, test_features, tag="test", eval_top_10=True)
         print("finetune", test_output)
 
