@@ -462,13 +462,9 @@ def main():
         if args.model_type in ['simple', 'ttmre', 'ATLOP']:
             print("PRETRAINING")
             print("pretrain distant", args.pretrain_distant)
-            # temp_epochs = args.num_train_epochs
-            args.num_train_epochs = 2
+            temp_epochs = args.num_train_epochs
+            # args.num_train_epochs = 2
             if args.pretrain_distant == 0: # pretrain on train and quit()
-                # debug
-                _, val_output = evaluate_bio(args, model, dev_features, tag="dev")
-                print(val_output)
-                # debug
                 train(args, model, train_features, dev_features, lr=1e-4)
                 # load the best val f1 model for testing
                 model.load_state_dict(torch.load(os.path.join(args.save_path, "best_valf1_model.pth")))
