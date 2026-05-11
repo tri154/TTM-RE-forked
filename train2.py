@@ -19,6 +19,21 @@ from model2 import DocREModel
 from prepro import read_docred, read_chemdisgene
 from evaluation import official_evaluate, to_official
 
+import wandb
+# import omegaconf
+
+
+def init_wandb(cfg):
+    if cfg.use_wandb == 1:
+        run = wandb.init(
+            entity="triyn01052004-vietnam-national-university-hanoi",
+            project="RR-RE",
+            config = cfg
+        )
+        return run
+    return None
+
+
 MEMORY_SIZE = 200
 
 def set_seed(args):
@@ -42,6 +57,9 @@ def collate_fn(batch):
 
 def train(args, model, train_features, dev_features, save_best_val=True, lr=1e-4, save_after_epoch=10,
           test_features=None):
+
+    wdb_run = init_wandb(args)
+
     new_layer = ["extractor", "bilinear"]
     optimizer_grouped_parameters = [
         {"params": [p for n, p in model.named_parameters() if not any(nd in n for nd in new_layer)], },
@@ -111,6 +129,8 @@ def train(args, model, train_features, dev_features, save_best_val=True, lr=1e-4
                 else:
                     avg_val_risk, val_output = cal_val_risk(args, model, dev_features)
                 print('avg val risk:', avg_val_risk, val_output, '\n')
+                if wdb_run is not None: wdb_run.log(val_output, num_steps)
+
 
                 if (epoch > save_after_epoch) and (best_model is None) or (val_output['dev_F1'] > best_val_f1):
                     best_val_f1 = val_output['dev_F1']
@@ -126,7 +146,7 @@ def train(args, model, train_features, dev_features, save_best_val=True, lr=1e-4
                     print('test risk:', test_score, test_output, '\n')
 
     print("best val: ", best_val_output)
-    return num_steps
+    return num_steps, wdb_run
 
 def cal_val_risk(args, model, features, tag="dev"):
     dataloader = DataLoader(features, batch_size=args.test_batch_size, shuffle=False, collate_fn=collate_fn, drop_last=False)
@@ -465,11 +485,12 @@ def main():
             temp_epochs = args.num_train_epochs
             # args.num_train_epochs = 2
             if args.pretrain_distant == 0: # pretrain on train and quit()
-                train(args, model, train_features, dev_features, lr=1e-4, test_features=test_features)
+                _, wdb_run = train(args, model, train_features, dev_features, lr=1e-4, test_features=test_features)
                 # load the best val f1 model for testing
                 model.load_state_dict(torch.load(os.path.join(args.save_path, "best_valf1_model.pth")))
                 test_score, test_output = evaluate_bio(args, model, test_features, tag="test")
                 print("pretrain performance on test", test_output)
+                if wdb_run is not None: wdb_run.log(test_output, num_steps)
                 quit()
             if args.pretrain_distant == 1: # pretrain on distant and quit()
                 if os.path.isfile(f"./distant_features_{args.model_name_or_path}.pkl"):
