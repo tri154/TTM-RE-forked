@@ -465,7 +465,7 @@ def main():
             temp_epochs = args.num_train_epochs
             # args.num_train_epochs = 2
             if args.pretrain_distant == 0: # pretrain on train and quit()
-                train(args, model, train_features, dev_features, lr=1e-4)
+                train(args, model, train_features, dev_features, lr=1e-4, test_features=test_features)
                 # load the best val f1 model for testing
                 model.load_state_dict(torch.load(os.path.join(args.save_path, "best_valf1_model.pth")))
                 test_score, test_output = evaluate_bio(args, model, test_features, tag="test")
