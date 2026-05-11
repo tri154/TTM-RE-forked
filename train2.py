@@ -24,14 +24,12 @@ import wandb
 
 
 def init_wandb(cfg):
-    if cfg.use_wandb == 1:
-        run = wandb.init(
-            entity="triyn01052004-vietnam-national-university-hanoi",
-            project="RR-RE",
-            config = cfg
-        )
-        return run
-    return None
+    run = wandb.init(
+        entity="triyn01052004-vietnam-national-university-hanoi",
+        project="RR-RE",
+        config = cfg
+    )
+    return run
 
 
 MEMORY_SIZE = 200

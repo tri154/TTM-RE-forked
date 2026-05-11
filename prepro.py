@@ -207,7 +207,7 @@ def read_chemdisgene(args, file_in, tokenizer, max_seq_length=1024, lower=True):
     n_remove = 0
     filter_features = list()
     for feature in features:
-        if len(feature['hts']) == 0 or len(feature['labels']) == 0:
+        if len(feature['hts']) == 0 and len(feature['labels']) == 0:
             print(feature['title'])
             n_remove += 1
             continue
