@@ -6,14 +6,14 @@ python train2.py --data_dir ./dataset/chemdisgene \
     --train_file train.json \
     --dev_file valid.json \
     --test_file test.anno_all.json \
-    --train_batch_size 8 \
-    --test_batch_size 8 \
+    --train_batch_size 6 \
+    --test_batch_size 6 \
     --gradient_accumulation_steps 1 \
     --learning_rate 2e-5 \
     --max_grad_norm 1.0 \
     --warmup_ratio 0.06 \
     --num_train_epochs 30.0 \
-    --seed 0 \
+    --seed 65 \
     --num_class 15 \
     --isrank 1 \
     --m_tag S-PU \
